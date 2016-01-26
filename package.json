@@ -4,7 +4,7 @@
   "description": "web server for current working directory contents",
   "main": "js/webdir.js",
   "bin": {
-    "webdir": "./js/webdir.js"
+    "webdir": "./webdir.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -24,6 +24,7 @@
   "author": "Greg Varsanyi",
   "license": "ISC",
   "dependencies": {
-    "express": "^3.4.8"
+    "express": "^4.13.4",
+    "serve-index": "^1.7.3"
   }
 }
