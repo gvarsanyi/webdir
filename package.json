@@ -1,6 +1,6 @@
 {
   "name": "webdir",
-  "version": "0.0.1",
+  "version": "0.5.0",
   "description": "web server for current working directory contents",
   "main": "js/webdir.js",
   "bin": {
