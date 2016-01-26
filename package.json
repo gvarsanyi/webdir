@@ -1,7 +1,7 @@
 {
   "name": "webdir",
-  "version": "0.5.0",
-  "description": "web server for current working directory contents",
+  "version": "0.5.1",
+  "description": "static http server for multiple interfaces/ports",
   "main": "js/webdir.js",
   "bin": {
     "webdir": "./webdir.js"
