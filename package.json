@@ -1,6 +1,6 @@
 {
   "name": "webdir",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "static http server for multiple interfaces/ports",
   "main": "js/server.js",
   "bin": {

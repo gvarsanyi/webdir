@@ -18,6 +18,10 @@ export interface AddressSpec {
   };
 }
 
+function validAddress(iface: NetworkInterfaceInfo): boolean {
+  return iface && typeof iface.address === 'string' && iface.address && iface.address.substr(0, 6) !== 'fe80::';
+}
+
 /**
  * Check addresses for being valid and local and unique. Also converts interface names to addresses
  * @param addresses list of address objects
@@ -38,10 +42,10 @@ export function resolveAddresses(addresses: AddressItem[], cb: (addressSpec: Add
       const ifaceAddressList: NetworkInterfaceInfo[] = [];
       if (address.host === '*') {
         for (const list of Object.values(ifaces)) {
-          ifaceAddressList.push(...(list || []));
+          ifaceAddressList.push(...(list || []).filter(validAddress));
         }
       } else {
-        ifaceAddressList.push(...(ifaces[address.host] || []));
+        ifaceAddressList.push(...(ifaces[address.host] || []).filter(validAddress));
       }
       console.log(`[MAPPED] '${address.host}' => '${ifaceAddressList.map((iface) => iface.address).join(`' '`)}'`);
       for (const iface of ifaceAddressList) {
@@ -83,6 +87,10 @@ export function resolveAddresses(addresses: AddressItem[], cb: (addressSpec: Add
 
   for (const host of hosts) {
     if (resolvedHosts.hasOwnProperty(host)) {
+      setTimeout(lookupCb, 0);
+    } else if (!validAddress(<NetworkInterfaceInfo>{address: host})) {
+      console.error(`[WARN] Ignoring invalid or non-local address '${host}'`);
+      resolvedHosts[host] = false;
       setTimeout(lookupCb, 0);
     } else {
       lookup(host, {verbatim: true}, (err, resolved) => {
