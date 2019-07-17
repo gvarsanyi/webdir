@@ -23,10 +23,10 @@ HTTP service for static contents
 # Host syntax
 Host can be an interface name (${Object.keys(networkInterfaces()).join(' ')}), IP (both v4 and v6)
 address or a hostname, but it must be bound to a local interface.
+Use `*` to listen on all interfaces.
 Default: localhost:8080
 
-# Simplest example
-Listen on port 8080 on all network interfaces including localhost
+# Example 1: workflow for default port (8080) on the default host (localhost)
 `cd /path/to/your/contents`
 
 `webdir start`
@@ -34,3 +34,10 @@ Listen on port 8080 on all network interfaces including localhost
 `webdir status`
 
 `webdir stop`
+
+# Example 2: listen on all interfaces and port 4200, use a different directory
+`webdir start --dir=../other/dir *:4200`
+
+# Example 3: listen on multiple addresses
+Use localhost and map all addresses for eth0, all on port 8080
+`webdir start localhost:8000 eth0:8000`

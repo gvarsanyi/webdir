@@ -1,10 +1,10 @@
 import express, { Express } from 'express';
 import { Server as HttpServer, createServer } from 'http';
+import { networkInterfaces } from 'os';
 import { sep } from 'path';
 import serveIndex from 'serve-index';
 
-export const OPS_CLOSE_ENDPOINT = '/.special-CLOSE-OP-endp01nt';
-export const OPS_STATUS_ENDPOINT = '/.special-STATUS-OP-endp01nt';
+import { IPV6_RX, OPS_CLOSE_ENDPOINT, OPS_STATUS_ENDPOINT } from './const';
 
 export type Modifier = 'no-index' | 'single-page-application';
 
@@ -63,7 +63,20 @@ export class Server {
       });
     }
 
-    this.server.listen(+port, host, startedCb);
+    if (host.match(IPV6_RX)) {
+      let extendedHost = host;
+      for (const [ifaceName, list] of Object.entries(networkInterfaces())) {
+        const addrMatch = list.find((item) => item.address === host);
+        if (addrMatch) {
+          extendedHost += '%' + ifaceName;
+          break;
+        }
+      }
+      this.server.listen({port: +port, host: extendedHost, ipv6Only: true}, startedCb);
+    } else {
+      this.server.listen({port: +port, host}, startedCb);
+    }
+
     errorCb && this.server.on('error', errorCb);
     closeCb && this.server.on('close', closeCb);
   }

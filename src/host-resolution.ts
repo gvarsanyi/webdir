@@ -1,5 +1,7 @@
 import { lookup } from 'dns';
-import { networkInterfaces } from 'os';
+import { NetworkInterfaceInfo, networkInterfaces } from 'os';
+
+import { IPV6_RX } from './const';
 
 export interface AddressItem {
   /** Address hostname */
@@ -16,9 +18,6 @@ export interface AddressSpec {
   };
 }
 
-// tslint:disable-next-line: max-line-length
-export const IPV6_RX = /(?:^|(?<=\s))(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?=\s|$)/;
-
 /**
  * Check addresses for being valid and local and unique. Also converts interface names to addresses
  * @param addresses list of address objects
@@ -33,11 +32,19 @@ export function resolveAddresses(addresses: AddressItem[], cb: (addressSpec: Add
 
   const addressList: AddressItem[] = [];
   for (const address of addresses) {
-    if (!ifaces[address.host] || !ifaces[address.host].length) {
+    if (address.host !== '*' && !(ifaces[address.host] && ifaces[address.host].length)) {
       addressList.push(address);
     } else {
-      console.log(`[MAPPED] '${address.host}' => '${ifaces[address.host].map((iface) => iface.address).join(`' '`)}'`);
-      for (const iface of ifaces[address.host]) {
+      const ifaceAddressList: NetworkInterfaceInfo[] = [];
+      if (address.host === '*') {
+        for (const list of Object.values(ifaces)) {
+          ifaceAddressList.push(...(list || []));
+        }
+      } else {
+        ifaceAddressList.push(...(ifaces[address.host] || []));
+      }
+      console.log(`[MAPPED] '${address.host}' => '${ifaceAddressList.map((iface) => iface.address).join(`' '`)}'`);
+      for (const iface of ifaceAddressList) {
         addressList.push({host: iface.address, port: address.port, ipv6: iface.family === 'IPv6'});
       }
     }

@@ -2,21 +2,16 @@ import { fork } from 'child_process';
 import { statSync } from 'fs';
 import { request } from 'http';
 import minimist from 'minimist';
-import { networkInterfaces } from 'os';
 import { resolve, sep } from 'path';
 import { cwd } from 'process';
 
-import { AddressItem, IPV6_RX, resolveAddresses } from './host-resolution';
-import { OPS_CLOSE_ENDPOINT, OPS_STATUS_ENDPOINT, Server } from './server';
-
-const DEFAULT_HOST = 'localhost';
-const DEFAULT_PORT = 8080;
-const MAX_PORT = 32768;
+import { ARG_ALIASES, ARG_BOOLEANS, DEFAULT_HOST, DEFAULT_PORT, IPV6_RX, MAX_PORT, OPS_CLOSE_ENDPOINT, OPS_STATUS_ENDPOINT } from './const';
+import { AddressItem, resolveAddresses } from './host-resolution';
+import { Server } from './server';
+import { FG_RUN_INFO, HELP, VERSION_STR } from './text';
 
 // configuration
-const alias = {d: 'dir', h: 'help', n: 'no-index', s: 'single-page-application', v: 'version'};
-const boolean = ['h', 'n', 's', 'v'];
-const args = minimist(process.argv.slice(2), {alias, boolean});
+const args = minimist(process.argv.slice(2), {alias: ARG_ALIASES, boolean: ARG_BOOLEANS});
 args.dir = resolve(args.dir || cwd());
 try {
   const stat = statSync(args.dir);
@@ -29,24 +24,11 @@ try {
 }
 
 if (args.version) {
-  console.log('webdir v' + require('../package.json').version);
+  console.log(VERSION_STR);
   process.exit(0);
 }
 if (args.help) {
-  console.log(`webdir v${require('../package.json').version}
-
-Commands:
-  webdir [start|stop|status] options [host] [host2]
-
-Options:
-  -d=PATH --dir=PATH            path to web root (defaults to current working directory)
-  -h --help                     this help
-  -n --no-index                 don't show directory index if index.html is missing in a folder
-  -s --single-page-application  redirects all 404s to index.html of webroot
-  -v --version                  version info
-
-Host can be an interface name (${Object.keys(networkInterfaces()).join(' ')}), IP (both v4 and v6)
-address or a hostname, but it must be bound to a local interface. Default: ${DEFAULT_HOST}:${DEFAULT_PORT}`);
+  console.log(HELP);
   process.exit(0);
 }
 
@@ -146,26 +128,23 @@ resolveAddresses(addresses, (addressesSpec) => {
           const forkArgs = [...(modifier ? ['--' + modifier] : []), '--dir=' + args.dir, ...addrStr.split(' ')];
           const child = fork(`${__dirname}${sep}webdir-bg.js`, forkArgs, {detached: true, stdio: 'ignore'});
           child.send(JSON.stringify({dir: args.dir, host, port: +portStr, modifier, addrStr}));
-          child.on('message', (msg: string) => {
-            if (msg && typeof msg === 'string') {
-              if (msg.indexOf('[ERROR]') === 0) {
-                console.error(msg);
-              } else {
-                console.log(msg);
-              }
+          child.on('message', (msg: boolean | string) => {
+            if (msg === true) {
+              console.log('[SERVER] Listening on:', addrStr);
+            } else {
+              console.error('[ERROR]', msg && typeof msg === 'string' ? msg : 'Unknown error', `(for: ${addrStr})`);
             }
             child.disconnect();
             child.unref();
           });
         } else {
           if (!count) {
-            console.log(`[INFO] Starting server on the foreground. To run as daemon, use the start/stop/status commands. Example:
-    webdir start ${process.argv.slice(2).join(' ')}`);
+            console.log(FG_RUN_INFO);
           }
           new Server(args.dir, host, +portStr, modifier, () => {
             console.log('[SERVER] Listening on:', addrStr);
           }, (err) => {
-            console.error('[ERROR]', err.message || err || 'Unknown', addrStr);
+            console.error('[ERROR]', err.message || err || 'Unknown error', `(for: ${addrStr})`);
           }, () => {
             console.log('[CLOSED]', addrStr);
           });
