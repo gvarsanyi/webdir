@@ -36,7 +36,7 @@ if (args.help) {
   console.log(`webdir v${require('../package.json').version}
 
 Commands:
-webdir [start|stop|status] options [host] [host2]
+  webdir [start|stop|status] options [host] [host2]
 
 Options:
   -d=PATH --dir=PATH            path to web root (defaults to current working directory)
@@ -46,7 +46,7 @@ Options:
   -v --version                  version info
 
 Host can be an interface name (${Object.keys(networkInterfaces()).join(' ')}), IP (both v4 and v6)
-address or a hostname, but it must be bound to a local interface.`);
+address or a hostname, but it must be bound to a local interface. Default: ${DEFAULT_HOST}:${DEFAULT_PORT}`);
   process.exit(0);
 }
 

@@ -4,15 +4,26 @@ webdir
 HTTP service for static contents
 
 # Install
-    sudo npm install -g webdir
+`sudo npm install -g webdir`
 
 # Usage
-    webdir [host[,host2...]]:port[,port2,...] [other_host:other_port] [--dir=/path/to/static/files]
+`webdir [start|stop|status] options [host] [host2]`
 
-# Examples
+# Options
+`-d=PATH` `--dir=PATH`            path to web root (defaults to current working directory)
+`-h` `--help`                     help
+`-n` `--no-index`                 don't show directory index if index.html is missing in a folder
+`-s` `--single-page-application`  redirects all 404s to index.html of webroot
+`-v` `--version`                  version info
+
+# Host syntax
+Host can be an interface name (${Object.keys(networkInterfaces()).join(' ')}), IP (both v4 and v6)
+address or a hostname, but it must be bound to a local interface.
+Default: localhost:8080
+
+# Simplest example
 Listen on port 8080 on all network interfaces including localhost
-    cd /path/to/your/contents
-    webdir :8080
-
-Listen on interface 192.168.1.100 on ports 1080 and 1090 for a specific directory:
-    webdir 192.168.1.100:1080,1090 --dir
+`cd /path/to/your/contents`
+`webdir start`
+`webdir status`
+`webdir stop`
