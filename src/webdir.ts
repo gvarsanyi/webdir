@@ -64,14 +64,16 @@ const addresses: AddressItem[] = [];
 
 const len = args._.length;
 for (let i = 0; i < len; i++) {
-  if (ops.hasOwnProperty(args._[i])) {
-    ops[<OP>args._[i]] = true;
+  const arg = String(args._[i]);
+  const nextArgPort = +args._[i + 1];
+  if (ops.hasOwnProperty(arg)) {
+    ops[<OP>arg] = true;
   } else {
-    let host = args._[i];
+    let host = arg;
     let ipv6 = false;
     let port: number;
-    if (args._[i].indexOf(']') > -1) {
-      const parts = args._[i].split(']');
+    if (arg.indexOf(']') > -1) {
+      const parts = arg.split(']');
       host = parts[0].replace('[', '').trim();
       if (host.match(IPV6_RX)) {
         ipv6 = true;
@@ -81,16 +83,16 @@ for (let i = 0; i < len; i++) {
       }
     } else if (host.match(IPV6_RX)) {
       ipv6 = true;
-    } else if (+args._[i] > 0 && +args._[i] < MAX_PORT && Number.isInteger(+args._[i])) {
+    } else if (+arg > 0 && +arg < MAX_PORT && Number.isInteger(+arg)) {
       host = DEFAULT_HOST;
-      port = +args._[i];
-    } else if (!ipv6 && args._[i].indexOf(':') > -1) {
-      const parts = args._[i].split(':');
+      port = +arg;
+    } else if (!ipv6 && arg.indexOf(':') > -1) {
+      const parts = arg.split(':');
       host = parts[0] || DEFAULT_HOST;
       port = +parts[1];
     }
-    if (!port && +args._[i + 1] > 0 && +args._[i + 1] < MAX_PORT && Number.isInteger(+args._[i + 1])) {
-      port = +args._[i + 1];
+    if (!port && nextArgPort > 0 && nextArgPort < MAX_PORT && Number.isInteger(nextArgPort)) {
+      port = nextArgPort;
       i++;
     }
     port = port || DEFAULT_PORT;
