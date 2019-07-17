@@ -12,6 +12,28 @@ import { FG_RUN_INFO, HELP, VERSION_STR } from './text';
 
 // configuration
 const args = minimist(process.argv.slice(2), {alias: ARG_ALIASES, boolean: ARG_BOOLEANS});
+
+// test for invalid args
+const acceptedArgs = ['_', ...Object.keys(ARG_ALIASES), ...Object.values(ARG_ALIASES)];
+const invalidOps = Object.keys(args).filter((k) => acceptedArgs.indexOf(k) === -1).map((op) => `-${op.length > 1 ? '-' : ''}${op}`);
+if (invalidOps.length) {
+  console.error(`[ERROR] Invalid argument${invalidOps.length > 1 ? 's' : ''}: ${invalidOps.join(' ')}`);
+  process.exit(1);
+}
+
+// version mode
+if (args.version) {
+  console.log(VERSION_STR);
+  process.exit(0);
+}
+
+// help mode
+if (args.help) {
+  console.log(HELP);
+  process.exit(0);
+}
+
+// consolidate dir
 args.dir = resolve(args.dir || cwd());
 try {
   const stat = statSync(args.dir);
@@ -23,19 +45,9 @@ try {
   process.exit(1);
 }
 
-if (args.version) {
-  console.log(VERSION_STR);
-  process.exit(0);
-}
-if (args.help) {
-  console.log(HELP);
-  process.exit(0);
-}
-
 const modifier = args['single-page-application'] ? 'single-page-application' : args['no-index'] ? 'no-index' : null;
 
 type OP = 'start' | 'stop' | 'status';
-
 const ops: {[op in OP]: boolean} = {
   start: false,
   status: false,
