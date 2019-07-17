@@ -6,7 +6,6 @@
     "callable-types": true,
     "class-name": true,
     "comment-format": [true, "check-space"],
-    "completed-docs": [true, {"classes": true, "enums": true, "functions": true, "methods": {"privacies": "all"}, "properties": true}],
     "component-class-suffix": true,
     "curly": true,
     "cyclomatic-complexity": [true, 30],

@@ -4,10 +4,10 @@
   "description": "static http server for multiple interfaces/ports",
   "main": "js/server.js",
   "bin": {
-    "webdir": "./cli.js"
+    "webdir": "js/webdir.js"
   },
   "scripts": {
-    "dist": "tsc && echo \"#!/usr/bin/env node\" | cat - js/cli.js > /tmp/out && mv /tmp/out js/cli.js && chmod a+x js/cli.js",
+    "dist": "tsc && echo \"#!/usr/bin/env node\" | cat - js/webdir.js > /tmp/out && mv /tmp/out js/webdir.js && chmod a+x js/webdir.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
