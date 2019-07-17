@@ -3,7 +3,7 @@ import { statSync } from 'fs';
 import { request } from 'http';
 import minimist from 'minimist';
 import { networkInterfaces } from 'os';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 import { cwd } from 'process';
 
 import { AddressItem, IPV6_RX, resolveAddresses } from './host-resolution';
@@ -142,7 +142,7 @@ resolveAddresses(addresses, (addressesSpec) => {
           req.end();
         } else if (ops.start) {
           const forkArgs = [...(modifier ? ['--' + modifier] : []), '--dir=' + args.dir, ...addrStr.split(' ')];
-          const child = fork('js/webdir-bg.js', forkArgs, {detached: true, stdio: 'ignore'});
+          const child = fork(`${__dirname}${sep}webdir-bg.js`, forkArgs, {detached: true, stdio: 'ignore'});
           child.send(JSON.stringify({dir: args.dir, host, port: +portStr, modifier, addrStr}));
           child.on('message', (msg: string) => {
             if (msg && typeof msg === 'string') {
