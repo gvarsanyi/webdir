@@ -29,7 +29,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "4.17.1",
-    "minimist": "1.2.3",
+    "minimist": "1.2.6",
     "serve-index": "1.9.1"
   },
   "devDependencies": {
