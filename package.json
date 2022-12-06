@@ -28,7 +28,7 @@
   "author": "Greg Varsanyi",
   "license": "ISC",
   "dependencies": {
-    "express": "4.17.1",
+    "express": "4.18.2",
     "minimist": "1.2.3",
     "serve-index": "1.9.1"
   },
