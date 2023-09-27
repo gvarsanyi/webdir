@@ -1,6 +1,6 @@
 {
   "name": "webdir",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "static http server for multiple interfaces/ports",
   "main": "js/server.js",
   "bin": {
@@ -28,16 +28,17 @@
   "author": "Greg Varsanyi",
   "license": "ISC",
   "dependencies": {
-    "express": "4.17.1",
-    "minimist": "1.2.3",
+    "express": "4.18.2",
+    "minimist": "1.2.8",
     "serve-index": "1.9.1"
   },
   "devDependencies": {
-    "@types/express": "4.17.0",
-    "@types/minimist": "1.2.0",
-    "@types/node": "12.6.4",
-    "@types/serve-index": "1.7.29",
-    "tslint": "5.18.0",
-    "typescript": "3.5.3"
+    "@types/express": "4.17.18",
+    "@types/express-serve-static-core": "4.17.37",
+    "@types/minimist": "1.2.3",
+    "@types/node": "20.7.0",
+    "@types/serve-index": "1.9.2",
+    "@types/serve-static": "1.15.3",
+    "typescript": "5.2.2"
   }
 }
