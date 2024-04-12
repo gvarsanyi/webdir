@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
-    "baseUrl": "src/",
+    "baseUrl": "src.old",
     "declaration": true,
     "esModuleInterop": true,
     "module": "commonjs",
@@ -11,13 +11,11 @@
     "paths": {
       "*": [
         "node_modules/*",
-        "src/*"
+        "src.old/*"
       ]
     },
     "sourceMap": true,
     "target": "es6"
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

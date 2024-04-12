@@ -1,0 +1,63 @@
+
+Usage:
+  webdir help
+
+  webdir start [ADDRESS] [mount [URL_PATH] [FS_PATH]] [--no-index] \
+    [--single-page-application] [--output=PATH]
+
+  webdir status [ADDRESS]
+
+  webdir stop [ADDRESS]
+
+  webdir update [ADDRESS] [mount|unmount [URL_PATH] [FS_PATH]] [<hostdef>] \
+    [--[no-]index] [--[no-]single-page-application] [--output=[PATH]]
+
+  webdir version
+  
+Arguments:
+  ADDRESS
+    Host and port specification.
+    Host can be interface name, IPv4, IPv6, a hostname, or "all" for all local
+    interfaces. Default: "localhost".
+    Port is an integer between 1 and 65535 inclusive. Default: 8080. Ports
+    under 1024 might need priviliged access.
+    You may provide multiple addresses.
+    Examples:
+      "localhost:8001" = IP: local loop device's IPv4 and IPv6, port: "8001"
+      "8000" = IP: local loop device's IPv4 and IPv6, port: "8000"
+      "eth0" = IP: ethernet device's IPv4 and IPv6, port: "8080"
+      "127.0.0.1" = host: "127.0.0.1", port: "8080"
+      "::1" = host: "::1" (local IPv6), port: "8080"
+      "[::1]:10001" = host: "::1" (local IPv6), port: "10001"
+      "all" = host: all local IPs, port: "8080"
+
+  mount|unmount
+    Add or remove association between URL path and file system path.
+    You may specify multiple associations.
+    If a URL path is associated with multiple file system paths, it will serve
+    both as if they were merged.
+
+    URL_PATH
+      HTTP path of the mount/unmount spec. Required. Must start with "/"
+
+    FS_PATH
+      File system path component of a mount or unmount spec. Defaults to
+      current working directory when omitted.
+
+  -n --no-index
+    No directory index if index.html is missing in a folder.
+
+  --index
+    Negate previously set no index (-n --no-index) mode
+
+  -o=LOGFILE --output=LOGFILE
+    Specify log file. Pass empty string to turn off logging
+
+  --no-output
+    Turns off logging
+
+  -s --spa --single-page-app --single-page-application
+    Redirect all not found (404) to "/index.html".
+
+  --no-spa --no-single-page-app --no-single-page-application
+    Negate previously set single page application mode
