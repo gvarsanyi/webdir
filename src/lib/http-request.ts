@@ -31,7 +31,14 @@ export async function httpRequest(params: RequestOptions, requestBody?: string):
         }
       });
     });
-    req.on('error', (err) => reject(err?.name === 'ConnectionRefused' ? new Error('service not found') : err));
+    req.on('error', (e) => {
+      const host = String(params.host);
+      if (String(e?.message).includes('fetch() URL is invalid') && host.includes(':') && !host.includes('[')) {
+        params.host = `[${params.host}]`;
+        return httpRequest(params, requestBody).then(resolve).catch(reject);
+      }
+      reject(e?.name === 'ConnectionRefused' ? new Error('service not found') : e);
+    });
     if (requestBody) {
       req.write(requestBody);
     }

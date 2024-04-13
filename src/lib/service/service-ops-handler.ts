@@ -123,14 +123,14 @@ export class ServiceOpsHandler {
    * @return op response
    */
   protected $stop(op: OpStop): ServiceOpResult {
-    try {
-      this.serviceData.server.close();
-      this.serviceData.server.closeAllConnections();
-      setTimeout(() => process.exit());
-      return this.opResult(op);
-    } catch (e) {
-      return this.opResult(op, false, true, String(e.message || 'failed to stop service'));
-    }
+    setTimeout(() => {
+      try {
+        this.serviceData.server.close();
+        this.serviceData.server.closeAllConnections();
+      } catch (e) {}
+      process.exit();
+    }, 50);
+    return this.opResult(op);
   }
 
   /**

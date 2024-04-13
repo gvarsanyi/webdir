@@ -5,9 +5,11 @@ import { join, normalize, resolve } from 'path';
 import { Mount } from '../../webdir.type';
 import { fontIconHTML } from '../font-icon-html';
 import { mimeType } from '../mime-type';
+import { root } from '../root';
 import { ServiceData } from './service-data';
+import { serviceHTMLResponse } from './service-html-response';
 
-const assetDir = resolve(__dirname + '/../../../static');
+const assetDir = resolve(root + '/static');
 const assetMounts: Mount[] = [];
 readdir(assetDir, (_err, files) => (Array.isArray(files) ? files : []).forEach((file) =>
   assetMounts.push({
@@ -93,39 +95,7 @@ export class ServiceGet {
         }
       }
     }
-    const url = this.urlPath || '/';
-    const res: ServerResponse & { _responded?: boolean } = this.res;
-    if (!res['_responded']) {
-      try {
-        res['_responded'] = true;
-        res.setHeader('Content-Type', 'text/html');
-        res.write(`<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>${url}</title>
-    <link rel="stylesheet" href="/.webdir/directory-index.css">
-  </head>
-  <body>
-    <script>
-      try {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.body.className = 'dark';
-        }
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-          try {
-            document.body.className = event.matches ? 'dark' : '';
-          } catch (e) {}
-        });
-      } catch (e) {}
-    </script>
-    <h1>404 - Not found</h1>
-    <p>${url}</p>
-  </body>
-</html>`);
-        res.end();
-      } catch (e) {}
-    }
+    serviceHTMLResponse(this.res, this.urlPath || '/', `    <h1>404 - Not found</h1>\n    <p>${this.urlPath || '/'}</p>\n`);
   }
 
   /** */
@@ -187,60 +157,28 @@ export class ServiceGet {
     const entries = Object.keys(entryInfo).sort((a, b) => {
       return entryInfo[a].mode !== entryInfo[b].mode ? entryInfo[a].mode === 'dir' ? -1 : 1 : a < b ? -1 : 1;
     });
-    const res: ServerResponse & { _responded?: boolean } = this.res;
-    if (!res['_responded']) {
-      try {
-        const urlParts = this.urlPath.split('/');
-        const urlPartsHTML = urlParts.map((item, i) => {
-          const href = urlParts.slice(0, i + 1).join('/') + '/';
-          const slash = '<span class="url-slash">/</span>';
-          return i === urlParts.length - 1 ?
-            i ? `<span class="url-item current">${item}</span>` :
-              `<span class="icon"><i class="fo fo-folder-closed"></i></span><span class="current">${slash}</span>` :
-            i ? `<a class="url url-item" href="${href}">${item}</a>${slash}` :
-              `<a class="url" href="${href}"><span class="icon"><i class="fo fo-folder-closed"></i></span>${slash}</a>`;
-        }).join('');
-        const entriesHTML = entries.map((entry) => {
-          const { fileSize, icon, mode } = entryInfo[entry];
-          const href = normalize(join(this.urlPath, entry));
-          const fsize = fileSize >= 0 ? ('\n      <span class="fsize-hidden">' + fileSize.toLocaleString('en') + 'b</span>' +
-            '\n      <span class="fsize">' + fileSize.toLocaleString('en') + 'b</span>') : '';
-          return `\n    <a class="entry${mode === 'dir' ? ' dir' : ''}" href="${href}">
-            <span class="icon">
-              ${icon}
-            </span>
-            ${entry}${mode === 'dir' ? '/' : ''}${fsize}
-          </a>`;
-        }).join('') + (entries.length ? '' : '<span class="no-entry">(empty directory)</span>');
-        const url = this.urlPath || '/';
-        res['_responded'] = true;
-        res.setHeader('Content-Type', 'text/html');
-        res.write(`<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>${url}</title>
-    <link rel="stylesheet" href="/.webdir/directory-index.css">
-  </head>
-  <body>
-    <script>
-      try {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.body.className = 'dark';
-        }
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-          try {
-            document.body.className = event.matches ? 'dark' : '';
-          } catch (e) {}
-        });
-      } catch (e) {}
-    </script>
-    <h1>${urlPartsHTML}</h1>
-    <div class="entries">${entriesHTML}</div>
-  </body>
-</html>`);
-        res.end();
-      } catch (e) {}
-    }
+    const urlParts = this.urlPath.split('/');
+    const urlPartsHTML = urlParts.map((item, i) => {
+      const href = urlParts.slice(0, i + 1).join('/') + '/';
+      const slash = '<span class="url-slash">/</span>';
+      return i === urlParts.length - 1 ?
+        i ? `<span class="url-item current">${item}</span>` :
+          `<span class="icon"><i class="fo fo-folder-closed"></i></span><span class="current">${slash}</span>` :
+        i ? `<a class="url url-item" href="${href}">${item}</a>${slash}` :
+          `<a class="url" href="${href}"><span class="icon"><i class="fo fo-folder-closed"></i></span>${slash}</a>`;
+    }).join('');
+    const entriesHTML = entries.map((entry) => {
+      const { fileSize, icon, mode } = entryInfo[entry];
+      const href = normalize(join(this.urlPath, entry));
+      const fsize = fileSize >= 0 ? ('\n      <span class="fsize-hidden">' + fileSize.toLocaleString('en') + 'b</span>' +
+        '\n      <span class="fsize">' + fileSize.toLocaleString('en') + 'b</span>') : '';
+      return `\n    <a class="entry${mode === 'dir' ? ' dir' : ''}" href="${href}">
+        <span class="icon">
+          ${icon}
+        </span>
+        ${entry}${mode === 'dir' ? '/' : ''}${fsize}
+      </a>`;
+    }).join('') + (entries.length ? '' : '<span class="no-entry">(empty directory)</span>');
+    serviceHTMLResponse(this.res, this.urlPath || '/', `    <h1>${urlPartsHTML}</h1>\n    <div class="entries">${entriesHTML}</div>\n`);
   }
 }

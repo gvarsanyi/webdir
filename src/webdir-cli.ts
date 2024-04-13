@@ -1,13 +1,15 @@
 import { readFileSync } from 'fs';
 import { cliArgs } from './lib/cli-args';
 import { printResult } from './lib/print-result';
+import { root } from './lib/root';
+import { version } from './lib/version';
 import { start, status, stop, update } from './webdir';
 
 (async function(): Promise<void> {
   switch (process.argv[2]) {
     case 'help': {
-      console.log('Manual for webdir v' + require('../package.json').version);
-      console.log(readFileSync(__dirname + '/../webdir-cli-help.txt', 'utf8'));
+      console.log('Manual for webdir v' + version());
+      console.log(readFileSync(root + '/webdir-cli-help.txt', 'utf8'));
       break;
     }
 
@@ -38,7 +40,7 @@ import { start, status, stop, update } from './webdir';
     }
 
     case 'version': {
-      console.log('webdir v' + require('../package.json').version);
+      console.log('webdir v' + version());
       break;
     }
 

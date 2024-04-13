@@ -12,12 +12,15 @@ export async function sendServiceOps(address: Address, ops: ServiceOp[]): Promis
   try {
     const reqConfig = {
       headers: {
+        'Host': address.host,
         'Content-Type': 'application/json'
       },
-      host: address.host.includes(':') ? `[${address.host}]` : address.host,
+      host: address.host,
+      family: address.host.includes(':') ? 6 : 4,
       method: serviceControlMethod,
       path: serviceControlPath,
-      port: address.port
+      port: address.port,
+      setHost: false
     };
     const [statusCode, raw] = await httpRequest(reqConfig, JSON.stringify({ _webdir: true, ops }));
     const res = JSON.parse(raw.toString('utf8')) as { _webdir: true; results: ServiceOpResult[] };

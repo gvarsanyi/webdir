@@ -1,7 +1,9 @@
 webdir
 ======
-
-HTTP service for static contents
+Turns your local folder into a HTTP web directory.
+You can expose a directory on multiple hosts and ports.
+You can also expose multiple directories on one host.
+You can even make multiple directories appear as one by mounting them on the same URL path.
 
 # Install
 ## As global app
@@ -11,10 +13,12 @@ HTTP service for static contents
 `sudo npm install webdir`
 
 # CLI use
+Install webdir as a globbal dependency: `npm install -g webdir`
+
 ## Help
 `webdir help`
 
-## Run service
+## Start service
 `webdir start [ADDRESS ...] [mount [URL_PATH] [FS_PATH]] [--no-index] [--single-page-application] [--output=PATH]`
 
 ### Arguments
@@ -77,3 +81,31 @@ Negate previously set single page application mode
 
 ## Get Webdir version
 `webdir version`
+
+# Programmatical use
+Install webdir as a dependency: `npm install webdir`
+
+## Start service
+```javascript
+import { start, stop } from 'webdir';
+
+// start service
+start({
+  host: 'localhost',
+  port: 8080
+}, {
+  mount: {
+    urlPath: '/',
+    fsPath: '/my/folder'
+  },
+  singlePageApp: true,
+  noIndex: true
+});
+
+// stop 1 minuute later
+setTimeout(() => stop({
+  host: 'localhost',
+  port: 8080
+}));
+
+```

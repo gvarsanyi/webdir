@@ -1,6 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { resolve } from 'path';
 import { Address, OpStart, WebdirOpResult } from '../../webdir.type';
+import { root } from '../root';
 
 /**
  * Start `webdir-service`
@@ -34,9 +34,10 @@ export function startDetachedService(address: Address): Promise<WebdirOpResult> 
       }
     };
     try {
-      const script = 'webdir-service.' + process.argv[1].split('.').pop();
+      const ext = (process.argv[1]).split('.').pop() === 'ts' ? 'ts' : 'js';
+      const script = 'webdir-service.' + ext;
       service = spawn(process.argv[0], [script, address.host, String(address.port)], {
-        cwd: resolve(__dirname + '/../..'),
+        cwd: root + '/' + (ext === 'ts' ? 'src' : 'js'),
         detached: true,
         stdio: 'pipe'
       });
