@@ -1,14 +1,27 @@
-import { RequestOptions, request } from 'http';
+import { request } from 'http';
+import { Address, ServiceOp } from '../webdir.type';
 
 /**
  * Promisified version of http.request
- * @param params request config
- * @param requestBody optional post data
+ * @param method HTTP method
+ * @param address target service
+ * @param path URL path
+ * @param ops service control commands
  * @returns response body
  */
-export async function httpRequest(params: RequestOptions, requestBody?: string): Promise<[number, Buffer]> {
+export async function httpRequest(method: 'GET' | 'POST', address: Address, path: string, ops?: ServiceOp[]): Promise<[number, Buffer]> {
   return new Promise<[number, Buffer]>(function(resolve, reject) {
-    const req = request(params, function(res) {
+    const requestBody = ops ? JSON.stringify({ _webdir: true, ops }) : '';
+    const req = request({
+      headers: requestBody ? {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(requestBody, 'utf8')
+      } : {},
+      host: address.host,
+      method,
+      path,
+      port: address.port
+    }, function(res) {
       if (res.statusCode! < 200 || res.statusCode! >= 300) {
         return reject(new Error('statusCode=' + res.statusCode));
       }
@@ -32,10 +45,12 @@ export async function httpRequest(params: RequestOptions, requestBody?: string):
       });
     });
     req.on('error', (e) => {
-      const host = String(params.host);
-      if (String(e?.message).includes('fetch() URL is invalid') && host.includes(':') && !host.includes('[')) {
-        params.host = `[${params.host}]`;
-        return httpRequest(params, requestBody).then(resolve).catch(reject);
+      if (String(e?.message).includes('fetch() URL is invalid') && address.host.includes(':') && !address.host.includes('[')) {
+        const ipv6Address: Address = {
+          host: `[${address.host}]`,
+          port: address.port
+        };
+        return httpRequest(method, ipv6Address, path, ops).then(resolve).catch(reject);
       }
       reject(e?.name === 'ConnectionRefused' ? new Error('service not found') : e);
     });

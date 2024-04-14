@@ -1,8 +1,8 @@
 import { IncomingMessage, ServerResponse, createServer } from 'http';
 import { Address } from '../../webdir.type';
 import { ServiceData } from './service-data';
-import { ServiceGet } from './service-get';
-import { ServiceOpsHandler } from './service-ops-handler';
+import { ServiceHandlerGET } from './service-handler-get';
+import { ServiceHandlerPOST } from './service-handler-post';
 
 export const serviceControlMethod = 'POST';
 export const serviceControlPath = '/.webdir';
@@ -20,6 +20,10 @@ export class Service {
   constructor(address: Address) {
     const server = createServer();
     this.data = new ServiceData(address, server);
+    server.on('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    });
     server.on('request', (req, res) => this.requestHandler(req, res));
     server.listen(address.port, address.host, () => {
       console.log(`<webdir listening ${address.host} @ ${address.port}>`);
@@ -46,39 +50,11 @@ export class Service {
     });
     req.on('end', () => {
       try {
-        const { method, url } = req;
-        if (url === serviceControlPath && String(method).toUpperCase() === serviceControlMethod) {
-          new ServiceOpsHandler(this.data, body, (json) => this.respond(res, 200, json));
-        } else if (method === 'GET') {
-          new ServiceGet(this.data, req.url, res);
-        } else {
-          this.respond(res, 500, 'server error');
+        if (String(req.method).toUpperCase() === 'GET') {
+          return new ServiceHandlerGET(this.data, req, res);
         }
-      } catch (e) {
-        this.respond(res, 500, {
-          error: true
-        });
-      }
+        new ServiceHandlerPOST(this.data, req, res, body);
+      } catch (e) {}
     });
   };
-
-  /**
-   * HTTP response
-   * @param res response object
-   * @param statusCode response status
-   * @param msg response explanation
-   * @param contentType override
-   */
-  protected respond(res: ServerResponse & { _responded?: boolean }, statusCode: number, msg?: string | object, contentType?: string): void {
-    if (!res['_responded']) {
-      try {
-        res['_responded'] = true;
-        msg = !msg || typeof msg === 'string' ? msg : JSON.stringify(msg);
-        (msg || contentType) && res.setHeader('Content-Type', contentType || (typeof msg === 'string' ? 'text/plain' : 'application/json'));
-        res.statusCode = statusCode;
-        msg && res.write(msg);
-        res.end();
-      } catch (e) {}
-    }
-  }
 }

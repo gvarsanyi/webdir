@@ -1,45 +1,21 @@
-import { createReadStream, readdir } from 'fs';
 import { access, readdir as asyncReaddir, stat } from 'fs/promises';
-import { ServerResponse } from 'http';
 import { join, normalize, resolve } from 'path';
-import { Mount } from '../../webdir.type';
 import { fontIconHTML } from '../font-icon-html';
 import { mimeType } from '../mime-type';
-import { root } from '../root';
-import { ServiceData } from './service-data';
-import { serviceHTMLResponse } from './service-html-response';
-
-const assetDir = resolve(root + '/static');
-const assetMounts: Mount[] = [];
-readdir(assetDir, (_err, files) => (Array.isArray(files) ? files : []).forEach((file) =>
-  assetMounts.push({
-    fsPath: assetDir + '/' + file,
-    urlPath: (file === 'favicon.ico' ? '/' : '/.webdir/') + file
-  })));
+import { staticAssetMounts } from '../static-asset-mounts';
+import { ServiceHandler } from './service-handler';
 
 /**
  * Processes incoming HTTP GET request
  */
-export class ServiceGet {
-  /**
-   * Route request
-   * @param serviceData reference to service data object
-   * @param urlPath request URL path
-   * @param res response object
-   **/
-  constructor(protected readonly serviceData: ServiceData, protected readonly urlPath: string, protected readonly res: ServerResponse) {
-    this.urlPath = normalize(urlPath).replace(/\\/g, '/').replace(/[\/]+$/, '').split('?')[0]
-      .split('/').map((part) => decodeURIComponent(part)).join('/');
-    this.process();
-  }
-
+export class ServiceHandlerGET extends ServiceHandler {
   /**
    * Match URL to FS entry and serve result
    * NOTE: In case of conflict, files take precedence, mounts are processed in order
    */
   protected async process(): Promise<void> {
     const fsDirs = [];
-    for (const mount of [...this.serviceData.mounts, ...assetMounts]) {
+    for (const mount of [...this.serviceData.mounts, ...staticAssetMounts]) {
       if ((this.urlPath + '/').startsWith(mount.urlPath + (mount.urlPath !== '/' ? '/' : ''))) {
         const fsPath = normalize(mount.fsPath + '/' + this.urlPath.substring(mount.urlPath.length)).replace(/[\\\/]+$/, '');
         const { mode } = await this.nodeType(fsPath);
@@ -60,7 +36,7 @@ export class ServiceGet {
       }
       return this.respondDir(fsDirs);
     }
-    this.respond404();
+    this.respondHTML(404, this.urlPath || '/', `<h1>404 - Not found</h1>\n<p>${this.urlPath || '/'}</p>\n`);
   }
 
   /**
@@ -81,58 +57,23 @@ export class ServiceGet {
   }
 
   /**
-   * Send page 404
-   */
-  protected async respond404(): Promise<void> {
-    if (this.serviceData.singlePageApp) { // redirect 404s to /index.html (if it exists)
-      for (const mount of this.serviceData.mounts) {
-        if (mount.urlPath === '/') {
-          const fsPath = normalize(mount.fsPath + '/index.html').replace(/\\/g, '/').replace(/\/$/, '');
-          const { mode } = await this.nodeType(fsPath);
-          if (mode === 'file') {
-            return this.respondFile(fsPath);
-          }
-        }
-      }
-    }
-    serviceHTMLResponse(this.res, this.urlPath || '/', `    <h1>404 - Not found</h1>\n    <p>${this.urlPath || '/'}</p>\n`);
-  }
-
-  /** */
-  protected respond500(): void {
-    const res: ServerResponse & { _responded?: boolean } = this.res;
-    if (!res['_responded']) {
-      try {
-        res['_responded'] = true;
-        res.setHeader('Content-Type', 'text/plain');
-        res.statusCode = 500;
-        res.write('500 - Server error');
-        res.end();
-      } catch (e) {}
-    }
-    res.end();
-  }
-
-  /**
-   * Respond with a file
-   * @param fsPath file to serve
-   */
-  protected async respondFile(fsPath: string): Promise<void> {
-    const stream = createReadStream(fsPath);
-    this.res.writeHead(200, {
-      'Content-Disposition': 'inline',
-      'Content-Type': mimeType(fsPath)
-    });
-    stream.pipe(this.res);
-  }
-
-  /**
    * Respond with a file
    * @param fsDirs dir contents to serve
    */
   protected async respondDir(fsDirs: string[]): Promise<void> {
     if (this.serviceData.noIndex) {
-      return this.respond404();
+      if (this.serviceData.singlePageApp) { // redirect 404s to /index.html (if it exists)
+        for (const mount of this.serviceData.mounts) {
+          if (mount.urlPath === '/') {
+            const fsPath = normalize(mount.fsPath + '/index.html').replace(/\\/g, '/').replace(/\/$/, '');
+            const { mode } = await this.nodeType(fsPath);
+            if (mode === 'file') {
+              return this.respondFile(fsPath);
+            }
+          }
+        }
+      }
+      this.respondHTML(404, this.urlPath || '/', `<h1>404 - Not found</h1>\n<p>${this.urlPath || '/'}</p>\n`);
     }
     const dirContents = await Promise.all(fsDirs.map((dir) => asyncReaddir(dir).catch(() => [])));
     const entryInfo: { [entry: string]: { fileSize?: number; fsPath: string; icon: string; mode: 'dir' | 'file'; mime?: string; } } = {};
@@ -179,6 +120,6 @@ export class ServiceGet {
         ${entry}${mode === 'dir' ? '/' : ''}${fsize}
       </a>`;
     }).join('') + (entries.length ? '' : '<span class="no-entry">(empty directory)</span>');
-    serviceHTMLResponse(this.res, this.urlPath || '/', `    <h1>${urlPartsHTML}</h1>\n    <div class="entries">${entriesHTML}</div>\n`);
+    this.respondHTML(200, this.urlPath || '/', `<h1>${urlPartsHTML}</h1>\n<div class="entries">${entriesHTML}</div>\n`);
   }
 }

@@ -1,49 +1,36 @@
 import { OpMount, OpNoIndex, OpOutput, OpSinglePageApp, OpStatus, OpStop, OpUnmount, ServiceOp, ServiceOpResult } from '../../webdir.type';
-import { ServiceData } from './service-data';
+import { ServiceHandler } from './service-handler';
 
 /**
  * Processes incoming HTTP control requests op by op (maintaining order) and sends response
  */
-export class ServiceOpsHandler {
-  protected readonly responses: ServiceOpResult[] = [];
-
+export class ServiceHandlerPOST extends ServiceHandler {
   /**
    * Route request to method and handle errors
-   * @param serviceData reference to service data object
-   * @param requestBody incoming data from request
-   * @param respondCb callback function to send HTTP response
    **/
-  constructor(
-    protected readonly serviceData: ServiceData,
-    protected readonly requestBody: string,
-    protected readonly respondCb: (json: object) => void
-  ) {
-    try {
-      const json = JSON.parse(this.requestBody) as { _webdir: true; ops: ServiceOp[]; };
-      if (json && typeof json === 'object' && json._webdir === true && Array.isArray(json.ops)) {
-        for (const op of json.ops) {
-          try {
-            const method = ('$' + Object.keys(op)[0]) as keyof this;
-            if (typeof this[method] !== 'function') {
-              throw new Error(`missing or invalid op`);
-            }
-            this.responses.push((this[method] as (op: ServiceOp) => ServiceOpResult)(op));
-          } catch (e) {
-            this.responses.push({
-              error: true,
-              message: String(e.message),
-              op,
-              success: false
-            });
-          }
-        }
-        this.sendResults();
-      } else {
-        this.respondCb({ error: true });
-      }
-    } catch (e) {
-      this.respondCb({ error: true });
+  async process(): Promise<void> {
+    const ops = (this.requestJSON?._webdir === true && Array.isArray(this.requestJSON.ops) ? this.requestJSON.ops : []);
+    if (!ops.length) {
+      return this.respond(500, { error: true });
     }
+    const results: ServiceOpResult[] = [];
+    for (const op of ops) {
+      try {
+        const method = ('$' + Object.keys(op)[0]) as keyof this;
+        if (typeof this[method] !== 'function') {
+          throw new Error(`missing or invalid op`);
+        }
+        results.push((this[method] as (op: ServiceOp) => ServiceOpResult)(op));
+      } catch (e) {
+        results.push({
+          error: true,
+          message: String(e.message),
+          op,
+          success: false
+        });
+      }
+    }
+    this.respond(200, { _webdir: true, results });
   }
 
   /**
@@ -164,15 +151,5 @@ export class ServiceOpsHandler {
     error && (response.error = true);
     message && (response.message = message);
     return response;
-  }
-
-  /**
-   * Respond to the HTTP request with op results
-   */
-  protected sendResults(): void {
-    this.respondCb({
-      _webdir: true,
-      results: this.responses
-    });
   }
 }
