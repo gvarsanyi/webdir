@@ -1,6 +1,5 @@
 import { Address, ServiceOp, ServiceOpResult } from '../webdir.type';
 import { httpRequest } from './http-request';
-import { serviceControlMethod, serviceControlPath } from './service/service';
 
 /**
  * Send HTTP request to a Webdir service
@@ -10,7 +9,7 @@ import { serviceControlMethod, serviceControlPath } from './service/service';
  */
 export async function sendServiceOps(address: Address, ops: ServiceOp[]): Promise<ServiceOpResult[]> {
   try {
-    const [statusCode, raw] = await httpRequest(serviceControlMethod, address, serviceControlPath, ops);
+    const [statusCode, raw] = await httpRequest('POST', address, '/.webdir', ops);
     const res = JSON.parse(raw.toString('utf8')) as { _webdir: true; results: ServiceOpResult[] };
     if (statusCode !== 200 || !res || typeof res !== 'object' || res._webdir !== true || !Array.isArray(res.results)) {
       throw new Error('invalid response');

@@ -82,3 +82,10 @@ export interface WebdirResult {
   }[];
   success?: 'full' | 'partial';
 }
+
+export interface ServiceLogEntry {
+  error?: boolean;
+  id: number;
+  t: number;
+  msg: string;
+}

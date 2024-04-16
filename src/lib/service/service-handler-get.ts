@@ -10,12 +10,29 @@ import { ServiceHandler } from './service-handler';
  */
 export class ServiceHandlerGET extends ServiceHandler {
   /**
+   * Get <header> with logo and path parts
+   */
+  protected get headerHTML(): string {
+    const urlParts = this.urlPath.split('/');
+    const urlPartsHTML = urlParts.map((item, i) => {
+      const href = urlParts.slice(0, i + 1).join('/') + '/';
+      const slash = '<span class="url-slash">/</span>';
+      return i === urlParts.length - 1 ?
+        i ? `<span class="url-item current">${item}</span>` :
+          `<span class="icon"><i class="fo fo-folder-closed"></i></span><span class="current">${slash}</span>` :
+        i ? `<a class="url url-item" href="${href}">${item}</a>${slash}` :
+          `<a class="url" href="${href}"><span class="icon"><i class="fo fo-folder-closed"></i></span>${slash}</a>`;
+    }).join('');
+    return `<h1><span class="brand">webdir</span> ${urlPartsHTML}</h1>`;
+  }
+
+  /**
    * Match URL to FS entry and serve result
    * NOTE: In case of conflict, files take precedence, mounts are processed in order
    */
   protected async process(): Promise<void> {
     const fsDirs = [];
-    for (const mount of [...this.serviceData.mounts, ...staticAssetMounts]) {
+    for (const mount of [...this.info.mounts, ...staticAssetMounts]) {
       if ((this.urlPath + '/').startsWith(mount.urlPath + (mount.urlPath !== '/' ? '/' : ''))) {
         const fsPath = normalize(mount.fsPath + '/' + this.urlPath.substring(mount.urlPath.length)).replace(/[\\\/]+$/, '');
         const { mode } = await this.nodeType(fsPath);
@@ -36,7 +53,7 @@ export class ServiceHandlerGET extends ServiceHandler {
       }
       return this.respondDir(fsDirs);
     }
-    this.respondHTML(404, this.urlPath || '/', `<h1>404 - Not found</h1>\n<p>${this.urlPath || '/'}</p>\n`);
+    this.respondHTML(404, this.urlPath || '/', `${this.headerHTML}<h2>404 - Not found</h2>\n`);
   }
 
   /**
@@ -61,9 +78,9 @@ export class ServiceHandlerGET extends ServiceHandler {
    * @param fsDirs dir contents to serve
    */
   protected async respondDir(fsDirs: string[]): Promise<void> {
-    if (this.serviceData.noIndex) {
-      if (this.serviceData.singlePageApp) { // redirect 404s to /index.html (if it exists)
-        for (const mount of this.serviceData.mounts) {
+    if (this.info.noIndex) {
+      if (this.info.singlePageApp) { // redirect 404s to /index.html (if it exists)
+        for (const mount of this.info.mounts) {
           if (mount.urlPath === '/') {
             const fsPath = normalize(mount.fsPath + '/index.html').replace(/\\/g, '/').replace(/\/$/, '');
             const { mode } = await this.nodeType(fsPath);
@@ -73,7 +90,7 @@ export class ServiceHandlerGET extends ServiceHandler {
           }
         }
       }
-      this.respondHTML(404, this.urlPath || '/', `<h1>404 - Not found</h1>\n<p>${this.urlPath || '/'}</p>\n`);
+      this.respondHTML(404, this.urlPath || '/', `${this.headerHTML}<h2>404 - Not found</h2>\n`);
     }
     const dirContents = await Promise.all(fsDirs.map((dir) => asyncReaddir(dir).catch(() => [])));
     const entryInfo: { [entry: string]: { fileSize?: number; fsPath: string; icon: string; mode: 'dir' | 'file'; mime?: string; } } = {};
@@ -98,16 +115,6 @@ export class ServiceHandlerGET extends ServiceHandler {
     const entries = Object.keys(entryInfo).sort((a, b) => {
       return entryInfo[a].mode !== entryInfo[b].mode ? entryInfo[a].mode === 'dir' ? -1 : 1 : a < b ? -1 : 1;
     });
-    const urlParts = this.urlPath.split('/');
-    const urlPartsHTML = urlParts.map((item, i) => {
-      const href = urlParts.slice(0, i + 1).join('/') + '/';
-      const slash = '<span class="url-slash">/</span>';
-      return i === urlParts.length - 1 ?
-        i ? `<span class="url-item current">${item}</span>` :
-          `<span class="icon"><i class="fo fo-folder-closed"></i></span><span class="current">${slash}</span>` :
-        i ? `<a class="url url-item" href="${href}">${item}</a>${slash}` :
-          `<a class="url" href="${href}"><span class="icon"><i class="fo fo-folder-closed"></i></span>${slash}</a>`;
-    }).join('');
     const entriesHTML = entries.map((entry) => {
       const { fileSize, icon, mode } = entryInfo[entry];
       const href = normalize(join(this.urlPath, entry));
@@ -120,6 +127,6 @@ export class ServiceHandlerGET extends ServiceHandler {
         ${entry}${mode === 'dir' ? '/' : ''}${fsize}
       </a>`;
     }).join('') + (entries.length ? '' : '<span class="no-entry">(empty directory)</span>');
-    this.respondHTML(200, this.urlPath || '/', `<h1>${urlPartsHTML}</h1>\n<div class="entries">${entriesHTML}</div>\n`);
+    this.respondHTML(200, this.urlPath || '/', `${this.headerHTML}\n<div class="entries">${entriesHTML}</div>\n`);
   }
 }

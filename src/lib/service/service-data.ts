@@ -4,8 +4,9 @@ import { Address, Mount } from '../../webdir.type';
 /**
  * Service data container
  */
-export class ServiceData {
+export class ServiceInfo {
   readonly mounts: Mount[] = [];
+  detached = false;
   listening = false;
   output = '';
   noIndex = false;

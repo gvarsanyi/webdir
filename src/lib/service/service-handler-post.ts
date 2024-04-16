@@ -18,7 +18,7 @@ export class ServiceHandlerPOST extends ServiceHandler {
       try {
         const method = ('$' + Object.keys(op)[0]) as keyof this;
         if (typeof this[method] !== 'function') {
-          throw new Error(`missing or invalid op`);
+          throw new Error('Invalid op');
         }
         results.push((this[method] as (op: ServiceOp) => ServiceOpResult)(op));
       } catch (e) {
@@ -40,10 +40,10 @@ export class ServiceHandlerPOST extends ServiceHandler {
    */
   protected $mount(op: OpMount): ServiceOpResult {
     const mount = op.mount && typeof op.mount === 'object' ? op.mount : undefined;
-    if (!mount || this.serviceData.mounts.find(({ fsPath, urlPath }) => fsPath === mount.fsPath && urlPath === mount.urlPath)) {
+    if (!mount || this.info.mounts.find(({ fsPath, urlPath }) => fsPath === mount.fsPath && urlPath === mount.urlPath)) {
       return this.opResult(op, false, undefined, 'already mounted');
     }
-    this.serviceData.mounts.push(mount);
+    this.info.mounts.push(mount);
     return this.opResult(op);
   }
 
@@ -53,8 +53,8 @@ export class ServiceHandlerPOST extends ServiceHandler {
    * @return op response
    */
   protected $noIndex(op: OpNoIndex): ServiceOpResult {
-    if (!!op.noIndex !== !!this.serviceData.noIndex) {
-      this.serviceData.noIndex = !!op.noIndex;
+    if (!!op.noIndex !== !!this.info.noIndex) {
+      this.info.noIndex = !!op.noIndex;
       return this.opResult(op);
     }
     return this.opResult(op, false, undefined, 'did not change');
@@ -66,8 +66,8 @@ export class ServiceHandlerPOST extends ServiceHandler {
    * @return op response
    */
   protected $output(op: OpOutput): ServiceOpResult {
-    if (typeof op.output === 'string' && op.output !== this.serviceData.output) {
-      this.serviceData.output = op.output;
+    if (typeof op.output === 'string' && op.output !== this.info.output) {
+      this.info.output = op.output;
       return this.opResult(op);
     }
     return this.opResult(op, false, undefined, 'did not change');
@@ -79,8 +79,8 @@ export class ServiceHandlerPOST extends ServiceHandler {
    * @return op response
    */
   protected $singlePageApp(op: OpSinglePageApp): ServiceOpResult {
-    if (!!op.singlePageApp !== !!this.serviceData.singlePageApp) {
-      this.serviceData.singlePageApp = !!op.singlePageApp;
+    if (!!op.singlePageApp !== !!this.info.singlePageApp) {
+      this.info.singlePageApp = !!op.singlePageApp;
       return this.opResult(op);
     }
     return this.opResult(op, false, undefined, 'did not change');
@@ -94,10 +94,10 @@ export class ServiceHandlerPOST extends ServiceHandler {
   protected $status(op: OpStatus): ServiceOpResult {
     return {
       status: {
-        mounts: this.serviceData.mounts,
-        noIndex: !!this.serviceData.noIndex,
-        output: typeof this.serviceData.output === 'string' ? this.serviceData.output : '',
-        singlePageApp: !!this.serviceData.singlePageApp
+        mounts: this.info.mounts,
+        noIndex: !!this.info.noIndex,
+        output: typeof this.info.output === 'string' ? this.info.output : '',
+        singlePageApp: !!this.info.singlePageApp
       },
       op,
       success: true
@@ -112,8 +112,8 @@ export class ServiceHandlerPOST extends ServiceHandler {
   protected $stop(op: OpStop): ServiceOpResult {
     setTimeout(() => {
       try {
-        this.serviceData.server.close();
-        this.serviceData.server.closeAllConnections();
+        this.info.server.close();
+        this.info.server.closeAllConnections();
       } catch (e) {}
       process.exit();
     }, 50);
@@ -127,9 +127,9 @@ export class ServiceHandlerPOST extends ServiceHandler {
    */
   protected $unmount(op: OpUnmount): ServiceOpResult {
     const mount = op.unmount && typeof op.unmount === 'object' ? op.unmount : undefined;
-    const pos = mount && this.serviceData.mounts.findIndex(({ fsPath, urlPath }) => fsPath === mount.fsPath && urlPath === mount.urlPath);
+    const pos = mount && this.info.mounts.findIndex(({ fsPath, urlPath }) => fsPath === mount.fsPath && urlPath === mount.urlPath);
     if (pos > -1) {
-      this.serviceData.mounts.splice(pos, 1);
+      this.info.mounts.splice(pos, 1);
       return this.opResult(op);
     }
     return this.opResult(op, false, undefined, 'was not mounted');

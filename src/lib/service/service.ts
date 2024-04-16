@@ -1,33 +1,45 @@
 import { IncomingMessage, ServerResponse, createServer } from 'http';
 import { Address } from '../../webdir.type';
-import { ServiceData } from './service-data';
+import { syncOnlyOn } from '../sync-only';
+import { ServiceInfo } from './service-data';
 import { ServiceHandlerGET } from './service-handler-get';
 import { ServiceHandlerPOST } from './service-handler-post';
-
-export const serviceControlMethod = 'POST';
-export const serviceControlPath = '/.webdir';
+import { ServiceLog } from './service-log';
 
 /**
  * Webdir HTTP server
  */
-export class Service {
-  protected readonly data: ServiceData;
+class Service extends ServiceLog {
+  protected readonly info: ServiceInfo;
 
   /**
    * Start service
    * @param address listening on
    */
   constructor(address: Address) {
+    super();
     const server = createServer();
-    this.data = new ServiceData(address, server);
-    server.on('error', (err) => {
-      console.error(err);
+    this.info = new ServiceInfo(address, server);
+  }
+
+  /** Start server */
+  listen(): void {
+    const { host, port } = this.info.address;
+    const { server } = this.info;
+    if (!host || !(port > 0 && port < 65536) || port !== parseInt(String(port), 10)) {
+      this.logError('invalid host or port:', host, port);
+      process.exit(1);
+    }
+    server.on('error', (e) => {
+      this.logError('server', e.name, e.message);
       process.exit(1);
     });
     server.on('request', (req, res) => this.requestHandler(req, res));
-    server.listen(address.port, address.host, () => {
-      console.log(`<webdir listening ${address.host} @ ${address.port}>`);
-      this.data.listening = true;
+    server.on('close', () => this.log(`server closed`));
+    server.listen(port, host, () => {
+      this.log(`<webdir listening ${host} @ ${port}>`);
+      this.info.detached = true;
+      this.info.listening = true;
     });
   }
 
@@ -48,13 +60,28 @@ export class Service {
         }
       } catch (e) {}
     });
+    req.on('error', (e) => this.logError('request', req.method, req.url, e.name, e.message));
     req.on('end', () => {
       try {
         if (String(req.method).toUpperCase() === 'GET') {
-          return new ServiceHandlerGET(this.data, req, res);
+          return new ServiceHandlerGET(this.info, req, res);
         }
-        new ServiceHandlerPOST(this.data, req, res, body);
-      } catch (e) {}
+        new ServiceHandlerPOST(this.info, req, res, body);
+      } catch (e) {
+        this.logError('request', req.method, req.url, e.name, e.message);
+      }
     });
   };
 }
+
+export const service = new Service({
+  host: process.argv[2],
+  port: +process.argv[3]
+});
+
+// log any and all uncaught exceptions and exit
+process.on('uncaughtException', (e) => {
+  syncOnlyOn();
+  service.logError(e?.name, e?.message, e.stack);
+  process.exit(1);
+});
